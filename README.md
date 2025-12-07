@@ -66,15 +66,15 @@ make
  
 ## Usage:
 Using the application simply requires a call to 
-<br>```./SnortingPackets```
+<br>```sudo ./SnortingPackets```
 <br>**NOTE: you can not exit the application with user input through the application! To exit use ```CRTL + Z```**
 
 ### Mode Syntax:
 Typical mode syntax would look like,
-```./SnortingPackets <mode> <mode-modifier>```
+```sudo ./SnortingPackets <mode> <mode-modifier>```
 * Examples: <br>
-```./SnortingPackets f tcp``` captures only tcp packets using filtered mode<br>
-```./SnortingPackets a``` selects ARP mode
+```sudo ./SnortingPackets f tcp``` captures only tcp packets using filtered mode<br>
+```sudo ./SnortingPackets a``` selects ARP mode
 
 ## Project Notes:
 * An important note is that this project was developed and tested in a WSL environment. In theory, the code base should work the same in any environment, but tests could not be completely accurate as WSL2 uses a NAT-based implementation for network handling, meaning the results are only accurate to the WSL environment due to the virtual ethernet adapter used and do not represent an actual Linux or Windows environment. Despite this, the project should work accurately in any environment as long as the setup steps are followed. I was unwilling to setup this project in an actual Windows environment due to the time contraint and the vastly different setup in Visual Studio. This project should still work properly in a normal Linux environment as WSL code compilation and error handling are the same, only the results will differ.
