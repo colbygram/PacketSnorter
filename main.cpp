@@ -14,12 +14,28 @@ namespace PacketSnorterSniffer{
     
     bool process_packet_callback(PDU& pdu)
     {
+        PDU* pduPtr = &pdu;
+        //Log to console that a new packet was recieved and being processed
+        //Log the packets type and size
+        while(pduPtr->inner_pdu() != nullptr){
+            if(pduPtr->inner_pdu()->pdu_type() == PDU::RAW) break;
+            pduPtr = pduPtr->inner_pdu();
+        }
+        std::cout << "\n______________________________________________________________________________\n";
         std::cout 
-        << "Processing new packet!\n";
-        std::cout 
-        << "Source: " << pdu.rfind_pdu<IP>().src_addr() 
-        << " Destination: " << pdu.rfind_pdu<IP>().dst_addr() 
-        <<std::endl;
+        << "Processing new packet:" 
+        << "\nUnderlying Packet Type: " << Utils::to_string(pduPtr->pdu_type()) 
+        << "\nFull Packet Size: "<<pdu.advertised_size() << " bytes"
+        << std::endl;
+        
+        IP* pduIPv4 = pdu.find_pdu<IP>();
+        if(pduIPv4 != 0){
+            //If packet has a valid IPv4 address source and destination, print them
+            std::cout 
+            << "Source: " << pduIPv4->src_addr() 
+            << "\nDestination: " << pduIPv4->dst_addr();
+            std::cout << "\n______________________________________________________________________________\n";
+        }
         return true;
     }   
     
@@ -53,42 +69,53 @@ namespace PacketSnorterARP{
 };
 
 namespace PacketSnorterApp{
-    PCKSN_STATE process_input(const char input){
+    PCKSN_STATE process_input(char* input){
         PCKSN_STATE return_state = PCKSN_EXIT;
-        switch (input)
-        {
-            case 'u':
-                return_state = PCKSN_UNFILTERED;
-                break;
-            case 'f':
-                return_state = PCKSN_FILTERED;
-                break;
-            case 'a':
-                return_state = PCKSN_ARP;
-                break;    
-            default:
-                break;
-        }
+
+        if(input == "f") return_state = PCKSN_FILTERED;
+        else if(input == "a") return_state = PCKSN_ARP;
+
         return return_state;
     }
-    void process_state(const PCKSN_STATE state){
 
+    void process_state(const PCKSN_STATE state, char* argv[], Sniffer& sniffer){
+        switch(state){
+            case PCKSN_UNFILTERED:
+                PacketSnorterSniffer::start_snorting_no_filter(sniffer);
+                break;
+            case PCKSN_FILTERED:
+                PacketSnorterSniffer::start_snorting_filter(sniffer, argv[2]);
+                break;
+            case PCKSN_ARP:
+                break;
+            default:
+                std::cout << "Error: Invalid modifier was given! Application exiting...\n";
+                break;
+        }
     }
-    void run_app(){
 
+    void run_app(const int argc, char* argv[], Sniffer& sniffer){
+        if(argc <= 1) {
+            process_state(PCKSN_UNFILTERED, argv, sniffer);
+        }
+        else process_state(process_input(argv[1]), argv, sniffer);
     }
 
 };
 
-int main() {  
+int main(int argc, char* argv[]) {
+    if(argc > 3){
+        std::cout << "Error: Invalid argument count!\n";
+        return -1;
+    }
+
     SnifferConfiguration config;
     config.set_immediate_mode(true);
     config.set_promisc_mode(true);
+
     Sniffer sniffer("eth0", config);
 
-    PacketSnorterSniffer::start_snorting_no_filter(sniffer, 1);
-
-    PacketSnorterApp::run_app();
+    PacketSnorterApp::run_app(argc, argv, sniffer);
 
     return 0;
 }
