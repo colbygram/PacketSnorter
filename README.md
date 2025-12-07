@@ -10,6 +10,7 @@ The other use of the application is to find all local devices connected to netwo
 PacketSnorter's executable can simply be called by default or with modifiers to determine its functionality.
 
 ### Modes:
+
 * Unfiltered: Starts the packet sniffer to capture any packet that is available to it. This is the default mode of the application and if there is any error with modifiers, it will default to unfiltered mode.
 
 * Filtered: Same as the previous mode, but allows the usage of a filter to capture specific types of packets. 
@@ -64,6 +65,7 @@ make
 ## Usage:
 Using the application simply requires a call to 
 <br>```./SnortingPackets```
+<br>**NOTE: you can not exit the application with user input through the application! To exit use ```CRTL + Z```**
 
 ### Mode Syntax:
 Typical mode syntax would look like,
