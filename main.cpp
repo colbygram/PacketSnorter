@@ -51,7 +51,7 @@ namespace PacketSnorterSniffer{
     }
 
     void start_snorting_filter(Sniffer& sniffer, const std::string filter){
-        sniffer.set_filter(filter);
+        if(sniffer.set_filter(filter)) std::cout << "Error: invalid filter provided! Using unfiltered mode\n";
         sniffer.sniff_loop(process_packet_callback);
     }
     void start_snorting_filter(Sniffer& sniffer, const std::string filter, const int max_packet_count){
@@ -59,7 +59,7 @@ namespace PacketSnorterSniffer{
             std::cout << "Invalid max_packet_count inputted\n";
             return;
         }
-        sniffer.set_filter(filter);
+        if(sniffer.set_filter(filter)) std::cout << "Error: invalid filter provided! Using unfiltered mode\n";
         sniffer.sniff_loop(process_packet_callback, max_packet_count);
     }
 };
@@ -71,9 +71,9 @@ namespace PacketSnorterARP{
 namespace PacketSnorterApp{
     PCKSN_STATE process_input(char* input){
         PCKSN_STATE return_state = PCKSN_EXIT;
-
-        if(input == "f") return_state = PCKSN_FILTERED;
-        else if(input == "a") return_state = PCKSN_ARP;
+        std::string input_str(input);
+        if(input_str == "f") return_state = PCKSN_FILTERED;
+        else if(input_str == "a") return_state = PCKSN_ARP;
 
         return return_state;
     }
@@ -84,9 +84,14 @@ namespace PacketSnorterApp{
                 PacketSnorterSniffer::start_snorting_no_filter(sniffer);
                 break;
             case PCKSN_FILTERED:
-                PacketSnorterSniffer::start_snorting_filter(sniffer, argv[2]);
+                if (argv[2] != nullptr) PacketSnorterSniffer::start_snorting_filter(sniffer, argv[2]);
+                else{
+                    std::cout << "Error: invalid filter provided! Using unfiltered mode\n";
+                    PacketSnorterSniffer::start_snorting_no_filter(sniffer);
+                }
                 break;
             case PCKSN_ARP:
+                
                 break;
             default:
                 std::cout << "Error: Invalid modifier was given! Application exiting...\n";
