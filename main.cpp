@@ -36,36 +36,53 @@ namespace PacketSnorterSniffer{
             << "\nDestination: " << pduIPv4->dst_addr();
             std::cout << "\n______________________________________________________________________________\n";
         }
+
+        ARP* pduARP = pdu.find_pdu<ARP>();
+        if(pduARP != 0){
+            std::cout 
+            << "Hardware Address: " << pduARP->sender_hw_addr() 
+            << std::endl;
+        }
         return true;
     }   
     
     void start_snorting_no_filter(Sniffer& sniffer){
         sniffer.sniff_loop(process_packet_callback);
     }
-    void start_snorting_no_filter(Sniffer& sniffer, const int max_packet_count){
-        if(max_packet_count <= 0) {
-            std::cout << "Invalid max_packet_count inputted\n";
-            return;
-        }
-        sniffer.sniff_loop(process_packet_callback, max_packet_count);
-    }
 
     void start_snorting_filter(Sniffer& sniffer, const std::string filter){
-        if(sniffer.set_filter(filter)) std::cout << "Error: invalid filter provided! Using unfiltered mode\n";
+        if(!sniffer.set_filter(filter)) std::cout << "Error: invalid filter provided! Using unfiltered mode\n";
         sniffer.sniff_loop(process_packet_callback);
-    }
-    void start_snorting_filter(Sniffer& sniffer, const std::string filter, const int max_packet_count){
-        if(max_packet_count <= 0) {
-            std::cout << "Invalid max_packet_count inputted\n";
-            return;
-        }
-        if(sniffer.set_filter(filter)) std::cout << "Error: invalid filter provided! Using unfiltered mode\n";
-        sniffer.sniff_loop(process_packet_callback, max_packet_count);
     }
 };
 
 namespace PacketSnorterARP{
+    IPv4Range find_address_range(NetworkInterface& network){
+        std::cout 
+        << "Network Name: "        << network.name()         << std::endl 
+        << "Network Address: "     << network.ipv4_address() << std::endl 
+        << "Network Subnet Mask: " << network.ipv4_mask()    << std::endl << std::endl;
 
+        return IPv4Range::from_mask(network.ipv4_address(), network.ipv4_mask());
+    }
+
+    void send_arp_requests(NetworkInterface& network, Sniffer& sniffer){
+        IPv4Range range = find_address_range(network);
+        for(const auto& addr : range){
+            EthernetII request = ARP::make_arp_request(addr, network.info().ip_addr, network.info().hw_addr);
+            PacketSender sender(network, 1);
+            std::unique_ptr<PDU> response_packet(sender.send_recv(request, network));
+            if(response_packet){
+                ARP& arp = response_packet->rfind_pdu<ARP>();
+                std::cout << "______________________________________________________________________________\n";
+                std::cout 
+                << "Hardware Device IPv4 Address: " << arp.sender_ip_addr() << std::endl
+                << "Hardware Device Address: " << arp.sender_hw_addr();
+                std::cout << "\n______________________________________________________________________________\n\n";
+            }
+        }
+        
+    }
 };
 
 namespace PacketSnorterApp{
@@ -78,20 +95,23 @@ namespace PacketSnorterApp{
         return return_state;
     }
 
-    void process_state(const PCKSN_STATE state, char* argv[], Sniffer& sniffer){
+    void process_state(const PCKSN_STATE state, char* argv[], Sniffer& sniffer, NetworkInterface& network){
         switch(state){
             case PCKSN_UNFILTERED:
                 PacketSnorterSniffer::start_snorting_no_filter(sniffer);
                 break;
             case PCKSN_FILTERED:
-                if (argv[2] != nullptr) PacketSnorterSniffer::start_snorting_filter(sniffer, argv[2]);
+                if (argv[2] != nullptr) {
+                    std::string filter(argv[2]);
+                    PacketSnorterSniffer::start_snorting_filter(sniffer, filter);
+                }
                 else{
                     std::cout << "Error: invalid filter provided! Using unfiltered mode\n";
                     PacketSnorterSniffer::start_snorting_no_filter(sniffer);
                 }
                 break;
             case PCKSN_ARP:
-                
+                PacketSnorterARP::send_arp_requests(network, sniffer);
                 break;
             default:
                 std::cout << "Error: Invalid modifier was given! Application exiting...\n";
@@ -99,11 +119,11 @@ namespace PacketSnorterApp{
         }
     }
 
-    void run_app(const int argc, char* argv[], Sniffer& sniffer){
+    void run_app(const int argc, char* argv[], Sniffer& sniffer, NetworkInterface& network){
         if(argc <= 1) {
-            process_state(PCKSN_UNFILTERED, argv, sniffer);
+            process_state(PCKSN_UNFILTERED, argv, sniffer, network);
         }
-        else process_state(process_input(argv[1]), argv, sniffer);
+        else process_state(process_input(argv[1]), argv, sniffer, network);
     }
 
 };
@@ -114,13 +134,15 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+    NetworkInterface network = NetworkInterface::default_interface();
+
     SnifferConfiguration config;
     config.set_immediate_mode(true);
     config.set_promisc_mode(true);
 
-    Sniffer sniffer("eth0", config);
+    Sniffer sniffer(network.name(), config);
 
-    PacketSnorterApp::run_app(argc, argv, sniffer);
+    PacketSnorterApp::run_app(argc, argv, sniffer, network);
 
     return 0;
 }
