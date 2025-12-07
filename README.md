@@ -10,11 +10,13 @@ The other use of the application is to find all local devices connected to netwo
 PacketSnorter's executable can simply be called by default or with modifiers to determine its functionality.
 
 ### Modes:
-
+<img width="800" height="500" alt="Screenshot 2025-12-07 000753" src="https://github.com/user-attachments/assets/0b7e146c-c34a-4571-bd11-06f4f8a79b5d" /><br>
 * Unfiltered: Starts the packet sniffer to capture any packet that is available to it. This is the default mode of the application and if there is any error with modifiers, it will default to unfiltered mode.
-
-* Filtered: Same as the previous mode, but allows the usage of a filter to capture specific types of packets. 
-
+  
+<img width="800" height="500" alt="Screenshot 2025-12-07 001122" src="https://github.com/user-attachments/assets/482771d2-1d6f-4096-b9ae-a90293df7cc4" /><br>
+* Filtered: Same as the previous mode, but allows the usage of a filter to capture specific types of packets.
+  
+<img width="500" height="150" alt="Screenshot 2025-12-07 001157" src="https://github.com/user-attachments/assets/65d2c8bf-2bba-4f95-b99f-4973b16dac3d" /><br>
 * ARP: The unique mode of this project, ARP mode will obtain the local networks subnet range and use that to send out ARP requests to any bound local devices. Any ARP replys will be processed and the hardware address of the device will be printed to the console. (!NOTE: The mode is not optimized and can run slowly on large subnets)
 
 ## Installation:
